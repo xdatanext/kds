@@ -71,7 +71,7 @@
 	% ./kds datera install
   ```
 - Let's see how the nodes look in Kubernetes
-  ```bash
+  ```shell_session
 	% kubectl get no
 
 		NAME      STATUS   ROLES    AGE   VERSION
@@ -81,7 +81,7 @@
   ```
 - Now let's go through the steps of Loading the CSI driver
   First step is to make sure that the Datera Cluster is accessible
-  ```bash
+  ```shell_session
 		% export DAT_MGMT='DATERA_MGMT_IP'
 		% export DAT_USER='admin'
 		% export DAT_PASS='password'
@@ -121,10 +121,12 @@
   visible in Kubernetes 
   ```bash
 	% kubectl get pvc
+  ```
 
 NAME      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
 csi-pvc   Bound    pvc-1ce66a63-5021-11e9-a32d-0cc47ac7f22e   10Gi       RWO            dat-block-storage   8m
-  ```
+
+
 - Now we want to make sure that the Application can use this Volume
   ```bash
 	% kubectl apply -f csi-app.yaml
@@ -132,17 +134,18 @@ csi-pvc   Bound    pvc-1ce66a63-5021-11e9-a32d-0cc47ac7f22e   10Gi       RWO    
   if you look at the file csi-app.yaml , it is a simple container that simply uses a mountpoint /data 
   for the csi-pvc and sleeps. 
   The Volume reference looks like : 
+  ```yaml
 	volumes:
 		- name: my-app-volume
 	      persistentVolumeClaim:
 	          claimName: csi-pvc
+  ```
 
    Once the application is created and the Pod created
-   ```bash
+   ```shell_session
 	% kubectl get po
-
-NAME         READY   STATUS    RESTARTS   AGE
-my-csi-app   1/1     Running   0          12m
+	NAME         READY   STATUS    RESTARTS   AGE
+	my-csi-app   1/1     Running   0          12m
    ```
 
 - Now if you'd like to run fio, vdbench for performance numbers 
