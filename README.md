@@ -1,5 +1,3 @@
-## Installing Kubernetes, Datera CSI using CentOS 7.6.1810 or Ubuntu 18.04 
-
 ### CentOS 7.6.1810, Kubernetes 1.14, Datera CSI 1.0.6, Docker 18.06.1
 ### Ubuntu 18.04.2, Kubernetes 1.14,  Datera CSI 1.0.6, Docker 18.06.1
 
@@ -154,5 +152,4 @@ csi-pvc   Bound    pvc-1ce66a63-5021-11e9-a32d-0cc47ac7f22e   10Gi       RWO    
   ```
   This will fetch the diobench yamls from github and submit it as a job. 
   Please refer to the diobench github for FIO/VDBENCH selection
-
 
