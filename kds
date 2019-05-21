@@ -1,0 +1,434 @@
+#!/bin/bash
+
+
+function master_setup()
+{
+	# master only
+	echo ">master" $1 $2 $3
+	script_dir=$2
+	if [ $1 = "install" ]; then
+		OST=`grep "ID=" /etc/os-release | grep -v VERSION | awk -F= '{ print $2 }' | sed 's/\"//g'`
+		if [ $OST = "ubuntu" ]; then
+			$script_dir/kinstall-ubuntu.sh $script_dir
+		fi
+		if [ $OST = "centos" ]; then
+			$script_dir/kinstall-centos.sh $script_dir
+		fi
+	elif [ $1 = "remove" ]; then
+		OST=`grep "ID=" /etc/os-release | grep -v VERSION | awk -F= '{ print $2 }' | sed 's/\"//g'`
+		if [ $OST = "ubuntu" ]; then
+			$script_dir/kremove-ubuntu.sh $script_dir
+		fi
+		if [ $OST = "centos" ]; then
+			$script_dir/kremove-centos.sh $script_dir
+		fi
+	elif [ $1 = "init" ]; then
+		echo "master init" $script_dir
+		$script_dir/master_init.sh $script_dir
+	elif [ $1 = "clean" ]; then
+		echo "master clean" $script_dir
+		rm -f $script_dir/*.log
+		if [ -f $script_dir/coredns.yaml ]; then
+			rm $script_dir/codedns.yaml
+		fi
+		if [ -f $script_dir/kube-flannel.yml ]; then
+			rm $script_dir/kube-flannel.yml
+		fi
+	else
+		echo $1 " unavailable!"
+	fi
+
+}
+
+function worker_setup()
+{
+	# worker only
+	echo ">worker" $1 $2 $3
+	script_dir=$2
+	if [ $1 = "install" ]; then
+		OST=`grep "ID=" /etc/os-release | grep -v VERSION | awk -F= '{ print $2 }' | sed 's/\"//g'`
+		if [ $OST = "ubuntu" ]; then
+			$script_dir/kinstall-ubuntu.sh
+		fi
+		if [ $OST = "centos" ]; then
+			$script_dir/kinstall-centos.sh
+		fi
+	elif [ $1 = "remove" ]; then
+		OST=`grep "ID=" /etc/os-release | grep -v VERSION | awk -F= '{ print $2 }' | sed 's/\"//g'`
+		if [ $OST = "ubuntu" ]; then
+			$script_dir/kremove-ubuntu.sh
+		fi
+		if [ $OST = "centos" ]; then
+			$script_dir/kremove-centos.sh
+		fi
+	elif [ $1 = "init" ]; then
+		echo "worker init" $script_dir
+		$script_dir/worker_init.sh $script_dir
+	elif [ $1 = "clean" ]; then
+		echo "worker clean" $script_dir
+		rm -f $script_dir/*.log
+		if [ -f $script_dir/coredns.yaml ]; then
+			rm $script_dir/codedns.yaml
+		fi
+		if [ -f $script_dir/kube-flannel.yml ]; then
+			rm $script_dir/kube-flannel.yml
+		fi
+	else
+		echo $1 " unavailable!"
+	fi
+}
+
+
+function clean()
+{
+    scr=$(jq '.["scripts"] ' k8s-config.json |  sed 's/"//g')
+    m=$(jq '.["master"] ' k8s-config.json |  sed 's/"//g')
+    if [ $1 = "all" ]; then
+	    for i in $(jq '.["hosts"] |.[] ' k8s-config.json | sed 's/"//g' )
+	    do
+		chkhost=`ping -c1 -W1 $i`
+		if [ $? -eq 0 ]; then
+		    echo $i
+		    if [ $i = $m ]; then
+				ssh $i $scr/kds master clean $scr
+		    else
+				ssh $i $scr/kds worker clean $scr
+		    fi
+		fi
+	    done
+    else 
+        ssh $i $scr/kds clean $scr
+    fi
+
+}
+
+function setup_all()
+{
+    m=`jq '.["master"]' k8s-config.json | sed 's/"//g'`
+    echo $m
+	#ssh-copy-id -i root@$i
+	# do the ssh setup here
+}
+
+function install_setup()
+{
+
+    scr=$(jq '.["scripts"] ' k8s-config.json |  sed 's/"//g')
+    m=$(jq '.["master"] ' k8s-config.json |  sed 's/"//g')
+    if [ $1 = "all" ]; then
+	    for i in $(jq '.["hosts"] |.[] ' k8s-config.json | sed 's/"//g' )
+	    do
+		chkhost=`ping -c1 -W1 $i`
+		if [ $? -eq 0 ]; then
+		    echo $i
+		    #ssh-copy-id -i root@$i
+		    if [ $i = $m ]; then
+				ssh $i $scr/kds master install $scr
+		    else
+				ssh $i $scr/kds worker install $scr
+		    fi
+		fi
+	    done
+    else 
+        ssh $i $scr/kds worker install $scr
+    fi
+}
+
+
+function remove_setup()
+{
+
+    scr=$(jq '.["scripts"] ' k8s-config.json |  sed 's/"//g')
+    m=$(jq '.["master"] ' k8s-config.json |  sed 's/"//g')
+    if [ $1 = "all" ]; then
+	    for i in $(jq '.["hosts"] |.[] ' k8s-config.json | sed 's/"//g' )
+	    do
+		chkhost=`ping -c1 -W1 $i`
+		if [ $? -eq 0 ]; then
+		    echo $i
+		    #ssh-copy-id -i root@$i
+		    if [ $i = $m ]; then
+				ssh $i $scr/kds master remove $scr
+		    else
+				ssh $i $scr/kds worker remove $scr
+		    fi
+		fi
+	    done
+    else 
+        ssh $i $scr/kds remove $scr
+    fi
+}
+
+function reset()
+{
+    if [ $1 = "all" ]; then
+	    scr=$(jq '.["scripts"] ' k8s-config.json |  sed 's/"//g')
+	    m=$(jq '.["master"] ' k8s-config.json |  sed 's/"//g')
+	    for i in $(jq '.["hosts"] |.[] ' k8s-config.json | sed 's/"//g' )
+	    do
+		chkhost=`ping -c1 -W1 $i`
+		if [ $? -eq 0 ]; then
+			echo "Resetting " $i
+			ssh $i kubeadm reset -f
+		fi
+	    done
+    else
+        ssh $1 kubeadm reset -f
+    fi
+
+}
+
+function init_setup()
+{
+
+    scr=$(jq '.["scripts"] ' k8s-config.json |  sed 's/"//g')
+    m=$(jq '.["master"] ' k8s-config.json |  sed 's/"//g')
+	if [ $1 = "master" ]; then
+		ssh $m $scr/kds master init $scr
+		ssh $m tail -2 $scr/kinit.log 2>&1 | tee join_cmd
+	elif [ $1 = "workers" ]; then
+	    for i in $(jq '.["hosts"] |.[] ' k8s-config.json | sed 's/"//g' )
+		do
+			chkhost=`ping -c1 -W1 $i`
+			if [ $? -eq 0 ]; then
+				echo $i
+				if [ $i != $m ]; then
+					ssh $i $scr/kds worker init $scr
+					kjcmd=$(cat join_cmd | sed 's/\\//g')
+					ssh $i $kjcmd 
+				fi
+			fi
+		done
+		# now label the workers
+	    for i in $(jq '.["hosts"] |.[] ' k8s-config.json | sed 's/"//g' )
+		do
+			if [ $i != $m ]; then
+				ssh $m $scr/label_worker.sh $i
+			fi
+		done
+	else
+		echo "Unknown " $1 
+	fi
+	#
+	ssh $m kubectl get no
+}
+
+function datera_setup()
+{
+	echo ">datera " $1 $2 $3
+	if [ $1 = "get" ]; then
+		echo "get"
+		cmd="get"
+	elif [ $1 = "install" ]; then
+		echo "install"
+		cmd="install"
+	else
+		echo "Unknown " $1
+		return -1	
+	fi
+
+	scr=$(jq '.["scripts"] ' k8s-config.json |  sed 's/"//g')
+    m=$(jq '.["master"] ' k8s-config.json |  sed 's/"//g')
+    for i in $(jq '.["hosts"] |.[] ' k8s-config.json | sed 's/"//g' )
+    do
+		chkhost=`ping -c1 -W1 $i`
+		if [ $? -eq 0 ]; then
+			echo "Executing " $cmd "on" $i
+			if [ $cmd = "get" ]; then
+				ssh $i "cd $scr; git clone https://github.com/Datera/datera-csi.git"
+				ssh $i "cd $scr; git clone https://github.com/Datera/ddct.git"
+			fi
+			if [ $cmd = "install" ]; then
+				ssh $i "$scr/datera-csi/assets/setup_iscsi.sh"
+				# TODO: ddct install is a mess
+				#ssh $i "$scr/ddct/install.py"
+			fi
+			if [ $cmd = "ddct" ]; then
+				scp datera-config.json $i:$scr
+				# TODO: ddct not installed yet
+				#ssh $i "$scr/ddct/ddct check"
+			fi
+		fi
+    done
+
+
+}
+
+function adduser()
+{
+	echo "adduser " $1 $2
+	ukey=`echo -n $1 | base64`
+	pkey=`echo -n $2 | base64`
+
+	echo "username: " $ukey
+	echo "password: " $pkey
+	echo -e "
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datera-secret
+  namespace: kube-system
+type: Opaque
+	data:
+	  # base64 encoded username
+	  username: $ukey
+	  # base64 encoded password
+	  password: $pkey
+" > datera-secret.yaml
+
+}
+
+function addtenant()
+{
+	echo "addtenant " $1
+	echo "Not yet!"
+}
+
+function dashboard_setup()
+{
+	dashboard/dashboard.sh
+}
+
+function diobench_setup()
+{
+	echo "Fetch diobench contents from github"
+	git clone https://github.com/xdatanext/diobench.git
+	echo "Kicking off the IO benchmark job"
+	#kubectl create -f diobench/diobench.yaml
+}
+
+usage() {
+cat << EOF
+$UTIL COMMAND
+
+Commands are:
+
+install   <args> - Kubernetes install
+			% ./kds install all
+			% ./kds install myhost
+
+remove    <args> - Kubernetes uninstall/removal 
+			% ./kds remove all
+			% ./kds remove myhost
+
+init    <args> - Kubernetes uninstall/removal 
+			% ./kds init master
+			% ./kds init workers
+
+reset   <args>	 - Kubernetes reset
+			% ./kds reset all
+			% ./kds reset myhost
+
+clean   <args>  - Clean up the logs & temp files created
+			% ./kds clean all
+			% ./kds clean myhost
+
+all     <args>  - Install, config based on k8s-config.json, datera-config.json
+
+master  <args>	- install the master for kubernetes 
+		  e.g.
+			% ./kds master install /root/k8s-datera
+			% ./kds master /root/k8s-datera
+worker  <args>	- install the worker for kubernetes
+		  e.g.
+			% ./kds worker install /root/k8s-datera
+			% ./kds worker /root/k8s-datera
+
+adduser <args>   - Create kubernetes secrets based on datera credentials
+
+datera <args>   - Clone Datera repos for datera-csi, ddct -- install, execute
+			% ./kds datera get
+			% ./kds datera install
+			% ./kds datera ddct
+
+dashboard <args> - Initialize the dashboard for Kubernetes
+
+diobench <args> - Start a Performance run using diobench for wither FIO or vdbench 
+
+-h, --help      - Show this help screen
+
+EOF
+}
+
+UTIL=$(basename $0)
+
+if [ $# -eq 0 ]; then
+	usage
+	exit 0
+fi
+
+case $1 in
+    "setup")
+        shift
+        setup_all "$@"
+        exit 0
+        ;;
+    "master")
+        shift
+        master_setup "$@"
+        exit 0
+        ;;
+    "worker")
+        shift
+        worker_setup "$@"
+        exit 0
+        ;;
+    "install")
+        shift
+        install_setup "$@"
+        exit 0
+        ;;
+    "remove")
+        shift
+        remove_setup "$@"
+        exit 0
+        ;;
+    "init")
+        shift
+        init_setup "$@"
+        exit 0
+        ;;
+    "reset")
+        shift
+        reset "$@"
+        exit 0
+        ;;
+    "clean")
+		shift
+		clean "$@"
+		exit 0
+		;;
+	"adduser")
+		shift
+		adduser "$@"
+		exit 0
+		;;
+	"addtenant")
+		shift
+		addtenant "$@"
+		exit 0
+		;;
+	"datera")
+		shift
+		datera_setup "$@"
+		exit 0
+		;;
+	"dashboard")
+		shift
+		dashboard_setup "$@"
+		exit 0
+		;;
+	"diobench")
+		shift
+		diobench_setup "$@"
+		exit 0
+		;;
+    -h | --help)
+        usage
+        exit 0
+        ;;
+    *)
+		echo $UTIL " : Unknown command :" $1
+        exit 1
+        ;;
+esac

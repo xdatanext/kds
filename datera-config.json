@@ -1,0 +1,7 @@
+{
+	"username": "admin",
+	"password": "password",
+	"tenant": "/root/k8s_sample",
+	"mgmt_ip": "myvip",
+	"api_version": "2.2"
+}

@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+import dfs_sdk
+
+def get_api_instance():
+    """
+    Returns the API login instance
+    """
+    # Login to Datera system and create an API object
+    mgmt_vip = '172.19.2.161'
+    admin_user = 'admin'
+    admin_pass = 'password'
+    tenant_name = '/root/test_tenant'
+    kwargs = {'disable_log': True}
+    try:
+        api = dfs_sdk.get_api(mgmt_vip,
+                              admin_user,
+                              admin_pass,
+                              'v2.2',
+                              tenant=tenant_name,
+                              **kwargs)
+    except (ApiConnectionError, ApiTimeoutError):
+        print 'Python SDK failed to login. Investigate this.'
+
+    return api
+
+def delete_all_app_instances():
+    """
+    This testcase will test the various storage parameters
+    that can be speicified in the StorageClass and posted
+    to Kube API server. Specifically, the QoS performance
+    policy will be set and read back.
+    """
+    # Get the API instance by logging into Datera
+    api = get_api_instance()
+
+    # Print all the App instances
+    apps = api.app_instances.list()
+    print 'Found {} app instances'.format(len(apps))
+
+    for myapp in apps:
+        print 'Admin state of app {} : {}'.format(myapp.name, myapp.admin_state)
+        print 'Setting app {} offline'.format(myapp.name)
+        myapp.set(admin_state="offline", force=True)
+        myapp = myapp.reload()
+        print 'Admin state of app {} : {}'.format(myapp.name, myapp.admin_state)
+        print 'Deleting app {}'.format(myapp.name)
+        myapp.delete()
+
+if __name__ == "__main__":
+    delete_all_app_instances()
+

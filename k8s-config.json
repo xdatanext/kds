@@ -1,0 +1,8 @@
+{
+	"namespace" : "dkube",
+	"hosts" : [ "172.19.3.207", "172.19.3.217" ],
+	"master" : "172.19.3.217",
+	"scripts" : "/root/kds",
+	"tenant" : "root",
+	"secrets" : 1
+}

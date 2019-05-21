@@ -1,0 +1,32 @@
+sysctl net.ipv4.conf.all.arp_announce=2
+sysctl net.ipv4.conf.all.arp_ignore=1
+echo 5 > /proc/sys/net/ipv4/route/gc_interval
+#
+sysctl net.ipv4.tcp_max_syn_backlog=8192
+sysctl net.ipv4.tcp_rmem='4096 87380 16777216'
+sysctl net.ipv4.tcp_synack_retries=2
+#
+sysctl net.ipv4.tcp_timestamps=0
+sysctl net.ipv4.tcp_max_syn_backlog=8192
+sysctl net.ipv4.tcp_rmem='4096 87380 16777216'
+#
+sysctl net.ipv4.tcp_synack_retries=2
+sysctl net.core.netdev_max_backlog=250000
+sysctl net.core.optmem_max=8388608
+sysctl net.core.rmem_default=8388608
+sysctl net.core.rmem_max=16777216
+sysctl net.core.somaxconn=1024
+sysctl net.core.wmem_default=8388608
+
+sysctl net.core.wmem_max=16777216
+sysctl net.ipv4.tcp_fin_timeout=15
+sysctl net.ipv4.tcp_low_latency=1
+
+sysctl net.ipv4.tcp_max_syn_backlog=8192
+
+sysctl net.ipv4.tcp_rmem='4096 87380 16777216'
+sysctl net.ipv4.tcp_synack_retries=2
+sysctl net.ipv4.tcp_tw_reuse=1
+sysctl net.ipv4.tcp_wmem='4096 65536 16777216'
+
+
